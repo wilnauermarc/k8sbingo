@@ -10,7 +10,7 @@ Complete real cluster challenges in your own local environment (kind, k3d, Minik
 
 - Responsive 5×5 bingo board (horizontal scroll on small screens)
 - Learning path modes (workloads, networking, troubleshooting, …)
-- 70+ seeded Kubernetes challenges across common topics
+- 150+ seeded Kubernetes challenges across common topics
 - 24 random tasks per board + free center square
 - “Why it matters” context plus before/after learning checklist
 - Estimated duration per challenge

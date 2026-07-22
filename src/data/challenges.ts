@@ -1510,6 +1510,1568 @@ kubectl set image deployment/web nginx=nginx:1.27
 kubectl set image deployment/web nginx=nginx:1.27-alpine
 kubectl rollout history deployment/web`,
   },
+  {
+    id: 'pod-busybox-sleep',
+    title: 'Create a long-running busybox Pod',
+    description:
+      'Create a Pod that runs busybox:1.36 with command sleep 3600 and verify it stays Running.',
+    difficulty: 'beginner',
+    category: 'Pods',
+    hint: 'kubectl run accepts --command -- for custom process arguments.',
+    exampleSolution: `kubectl run sleeper --image=busybox:1.36 --restart=Never -- sleep 3600
+kubectl wait --for=condition=Ready pod/sleeper --timeout=60s
+kubectl get pod sleeper`,
+  },
+  {
+    id: 'pod-env-literal',
+    title: 'Set a literal environment variable',
+    description:
+      'Create a Pod with ENV=bingo and print the variable from inside the container.',
+    difficulty: 'beginner',
+    category: 'Pods',
+    hint: 'Use env in the container spec, or kubectl set env / run --env.',
+    exampleSolution: `kubectl run envpod --image=busybox:1.36 --restart=Never --env=ENV=bingo -- printenv ENV
+kubectl logs envpod`,
+  },
+  {
+    id: 'pod-workdir',
+    title: 'Set a container workingDir',
+    description:
+      'Create a Pod whose container workingDir is /tmp and confirm with pwd.',
+    difficulty: 'beginner',
+    category: 'Pods',
+    hint: 'workingDir is under the container spec.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: workdir-pod
+spec:
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      workingDir: /tmp
+      command: ["sh", "-c", "pwd; sleep 3600"]
+EOF
+kubectl logs workdir-pod`,
+  },
+  {
+    id: 'pod-args-command',
+    title: 'Override command and args',
+    description:
+      'Create a Pod that overrides the image entrypoint to run echo with custom args.',
+    difficulty: 'beginner',
+    category: 'Pods',
+    hint: 'command replaces ENTRYPOINT; args replace CMD.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cmd-args
+spec:
+  restartPolicy: Never
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      command: ["echo"]
+      args: ["hello", "from", "args"]
+EOF
+kubectl logs cmd-args`,
+  },
+  {
+    id: 'pod-restart-never',
+    title: 'Use restartPolicy Never',
+    description:
+      'Create a one-shot Pod with restartPolicy: Never that exits 0, then inspect its phase Succeeded.',
+    difficulty: 'beginner',
+    category: 'Pods',
+    hint: 'Pods used like Jobs often set restartPolicy to Never or OnFailure.',
+    exampleSolution: `kubectl run once --image=busybox:1.36 --restart=Never -- echo done
+kubectl get pod once -o jsonpath='{.status.phase}{"\\n"}'`,
+  },
+  {
+    id: 'pod-image-pull-policy',
+    title: 'Set imagePullPolicy',
+    description:
+      'Create a Pod with imagePullPolicy: IfNotPresent and confirm the field in the Pod spec.',
+    difficulty: 'intermediate',
+    category: 'Pods',
+    hint: ':latest defaults to Always; pinned tags often use IfNotPresent.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pull-policy
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      imagePullPolicy: IfNotPresent
+EOF
+kubectl get pod pull-policy -o jsonpath='{.spec.containers[0].imagePullPolicy}{"\\n"}'`,
+  },
+  {
+    id: 'pod-hostname',
+    title: 'Set a custom Pod hostname',
+    description:
+      'Create a Pod with hostname bingo-host and verify it from inside the container.',
+    difficulty: 'intermediate',
+    category: 'Pods',
+    hint: 'spec.hostname sets the container hostname.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: host-demo
+spec:
+  hostname: bingo-host
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      command: ["sh", "-c", "hostname; sleep 3600"]
+EOF
+kubectl logs host-demo`,
+  },
+  {
+    id: 'pod-share-process',
+    title: 'Enable shareProcessNamespace',
+    description:
+      'Create a multi-container Pod with shareProcessNamespace: true and list processes from one container.',
+    difficulty: 'advanced',
+    category: 'Pods',
+    hint: 'Shared PID namespace lets sidecars see each other’s processes.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shared-pid
+spec:
+  shareProcessNamespace: true
+  containers:
+    - name: nginx
+      image: nginx:1.27
+    - name: debugger
+      image: busybox:1.36
+      command: ["sh", "-c", "ps aux; sleep 3600"]
+      securityContext:
+        capabilities:
+          add: ["SYS_PTRACE"]
+EOF
+kubectl logs shared-pid -c debugger`,
+  },
+  {
+    id: 'deploy-pause',
+    title: 'Pause and resume a rollout',
+    description:
+      'Start an image update, pause the rollout, inspect status, then resume it.',
+    difficulty: 'intermediate',
+    category: 'Deployments',
+    hint: 'kubectl rollout pause / resume control in-flight updates.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.26 --replicas=3
+kubectl set image deployment/web nginx=nginx:1.27
+kubectl rollout pause deployment/web
+kubectl rollout status deployment/web --watch=false || true
+kubectl rollout resume deployment/web
+kubectl rollout status deployment/web`,
+  },
+  {
+    id: 'deploy-revision',
+    title: 'Roll back to a specific revision',
+    description:
+      'Create multiple Deployment revisions, then undo to a chosen revision number.',
+    difficulty: 'intermediate',
+    category: 'Deployments',
+    hint: 'kubectl rollout undo --to-revision=N selects a past revision.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.26
+kubectl set image deployment/web nginx=nginx:1.27
+kubectl set image deployment/web nginx=nginx:1.27-alpine
+kubectl rollout history deployment/web
+kubectl rollout undo deployment/web --to-revision=1
+kubectl rollout status deployment/web`,
+  },
+  {
+    id: 'deploy-labels-selector',
+    title: 'Match Deployment selector labels',
+    description:
+      'Write a Deployment where selector.matchLabels exactly match the Pod template labels.',
+    difficulty: 'beginner',
+    category: 'Deployments',
+    hint: 'A mismatch between selector and template labels is rejected by the API.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: match-labels
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: match-labels
+  template:
+    metadata:
+      labels:
+        app: match-labels
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+EOF
+kubectl get deploy match-labels`,
+  },
+  {
+    id: 'deploy-resources',
+    title: 'Set resources on a Deployment',
+    description:
+      'Create a Deployment whose container requests 50m CPU / 64Mi and limits 200m / 128Mi.',
+    difficulty: 'beginner',
+    category: 'Deployments',
+    hint: 'Put resources under template.spec.containers[].resources.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: res-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: res-web
+  template:
+    metadata:
+      labels:
+        app: res-web
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+EOF
+kubectl get deploy res-web -o yaml | sed -n '/resources:/,/ports:/p'`,
+  },
+  {
+    id: 'deploy-edit',
+    title: 'Edit a live Deployment',
+    description:
+      'Use kubectl edit or patch to change a Deployment replica count without rewriting the whole file.',
+    difficulty: 'beginner',
+    category: 'Deployments',
+    hint: 'kubectl patch is scriptable; edit opens your $EDITOR.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27 --replicas=1
+kubectl patch deployment web -p '{"spec":{"replicas":3}}'
+kubectl get deploy web`,
+  },
+  {
+    id: 'deploy-minready',
+    title: 'Set minReadySeconds',
+    description:
+      'Configure minReadySeconds on a Deployment and observe that Pods are not considered available immediately.',
+    difficulty: 'advanced',
+    category: 'Deployments',
+    hint: 'minReadySeconds delays marking a Pod available after it becomes Ready.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minready
+spec:
+  replicas: 2
+  minReadySeconds: 10
+  selector:
+    matchLabels:
+      app: minready
+  template:
+    metadata:
+      labels:
+        app: minready
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+EOF
+kubectl get deploy minready -o jsonpath='{.spec.minReadySeconds}{"\\n"}'`,
+  },
+  {
+    id: 'deploy-recreate',
+    title: 'Use Recreate strategy',
+    description:
+      'Create a Deployment with strategy.type=Recreate, update the image, and observe old Pods terminate before new ones start.',
+    difficulty: 'intermediate',
+    category: 'Deployments',
+    hint: 'Recreate causes downtime but avoids running two versions at once.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recreate-web
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: recreate-web
+  template:
+    metadata:
+      labels:
+        app: recreate-web
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.26
+EOF
+kubectl set image deployment/recreate-web nginx=nginx:1.27
+kubectl rollout status deployment/recreate-web`,
+  },
+  {
+    id: 'svc-loadbalancer',
+    title: 'Create a LoadBalancer Service',
+    description:
+      'Expose a Deployment as type LoadBalancer and inspect EXTERNAL-IP / pending status on your local cluster.',
+    difficulty: 'beginner',
+    category: 'Services',
+    hint: 'On kind/minikube EXTERNAL-IP may stay Pending unless MetalLB or a tunnel is configured.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27
+kubectl expose deployment web --type=LoadBalancer --port=80 --name=web-lb
+kubectl get svc web-lb`,
+  },
+  {
+    id: 'svc-named-port',
+    title: 'Use a named targetPort',
+    description:
+      'Create a Service that targets a named container port http instead of a number.',
+    difficulty: 'intermediate',
+    category: 'Services',
+    hint: 'Name the containerPort and reference that name from the Service.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: named-port
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: named-port
+  template:
+    metadata:
+      labels:
+        app: named-port
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - name: http
+              containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: named-port-svc
+spec:
+  selector:
+    app: named-port
+  ports:
+    - port: 80
+      targetPort: http
+EOF
+kubectl get svc named-port-svc -o yaml`,
+  },
+  {
+    id: 'svc-session-affinity',
+    title: 'Enable ClientIP session affinity',
+    description:
+      'Create a ClusterIP Service with sessionAffinity: ClientIP and confirm the field.',
+    difficulty: 'intermediate',
+    category: 'Services',
+    hint: 'ClientIP sticky sessions keep a client on the same backend Pod.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27 --replicas=2
+kubectl expose deployment web --port=80 --name=sticky
+kubectl patch svc sticky -p '{"spec":{"sessionAffinity":"ClientIP"}}'
+kubectl get svc sticky -o jsonpath='{.spec.sessionAffinity}{"\\n"}'`,
+  },
+  {
+    id: 'svc-multi-port',
+    title: 'Expose multiple Service ports',
+    description:
+      'Create a Service with two ports (80 and 8080) pointing at the same Pod port 80 for practice.',
+    difficulty: 'intermediate',
+    category: 'Services',
+    hint: 'Each Service port needs a unique name when more than one is defined.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: multiport
+spec:
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: alt
+      port: 8080
+      targetPort: 80
+EOF
+kubectl get svc multiport`,
+  },
+  {
+    id: 'svc-yaml-apply',
+    title: 'Apply a Service from YAML',
+    description:
+      'Write a ClusterIP Service manifest by hand, apply it, and verify Endpoints appear for a Deployment.',
+    difficulty: 'beginner',
+    category: 'Services',
+    hint: 'selector labels must match Pod labels created by the Deployment.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-yaml-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: 80
+EOF
+kubectl get endpoints web-yaml-svc`,
+  },
+  {
+    id: 'cm-from-env-file',
+    title: 'Create a ConfigMap from an env file',
+    description:
+      'Create a dotenv-style file and import it with kubectl create configmap --from-env-file.',
+    difficulty: 'beginner',
+    category: 'ConfigMaps and Secrets',
+    hint: '--from-env-file expects KEY=VALUE lines.',
+    exampleSolution: `printf 'APP_ENV=dev\\nLOG_LEVEL=debug\\n' > app.env
+kubectl create configmap envfile --from-env-file=app.env
+kubectl get configmap envfile -o yaml`,
+  },
+  {
+    id: 'cm-edit',
+    title: 'Update a ConfigMap key',
+    description:
+      'Create a ConfigMap, change one key with kubectl patch or edit, and re-read the value.',
+    difficulty: 'beginner',
+    category: 'ConfigMaps and Secrets',
+    hint: 'Mounted ConfigMaps update eventually; env vars from ConfigMaps do not auto-reload.',
+    exampleSolution: `kubectl create configmap app-config --from-literal=COLOR=blue
+kubectl patch configmap app-config --type merge -p '{"data":{"COLOR":"green"}}'
+kubectl get configmap app-config -o jsonpath='{.data.COLOR}{"\\n"}'`,
+  },
+  {
+    id: 'secret-from-file',
+    title: 'Create a Secret from a file',
+    description:
+      'Write a password.txt file and create a Secret with --from-file.',
+    difficulty: 'beginner',
+    category: 'ConfigMaps and Secrets',
+    hint: 'Do not commit real secrets; use throwaway lab values.',
+    exampleSolution: `echo 's3cret' > password.txt
+kubectl create secret generic file-secret --from-file=password=password.txt
+kubectl describe secret file-secret`,
+  },
+  {
+    id: 'secret-mount',
+    title: 'Mount a Secret as files',
+    description:
+      'Mount a Secret into a Pod under /etc/secret and read a key as a file.',
+    difficulty: 'intermediate',
+    category: 'ConfigMaps and Secrets',
+    hint: 'volume.source.secret is the Secret equivalent of configMap volumes.',
+    exampleSolution: `kubectl create secret generic app-secret --from-literal=token=abc123
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: secret-mount
+spec:
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      command: ["sh", "-c", "cat /etc/secret/token; sleep 3600"]
+      volumeMounts:
+        - name: sec
+          mountPath: /etc/secret
+          readOnly: true
+  volumes:
+    - name: sec
+      secret:
+        secretName: app-secret
+EOF
+kubectl logs secret-mount`,
+  },
+  {
+    id: 'secret-docker-registry',
+    title: 'Create a docker-registry Secret',
+    description:
+      'Create a kubernetes.io/dockerconfigjson Secret with kubectl create secret docker-registry (use fake credentials in the lab).',
+    difficulty: 'intermediate',
+    category: 'ConfigMaps and Secrets',
+    hint: 'imagePullSecrets reference this Secret on Pods/ServiceAccounts.',
+    exampleSolution: `kubectl create secret docker-registry regcred \\
+  --docker-server=example.registry.local \\
+  --docker-username=demo \\
+  --docker-password=demo \\
+  --docker-email=demo@example.com
+kubectl get secret regcred -o jsonpath='{.type}{"\\n"}'`,
+  },
+  {
+    id: 'cm-subpath',
+    title: 'Mount one ConfigMap key with subPath',
+    description:
+      'Mount a single ConfigMap key as /etc/app/config.properties using subPath.',
+    difficulty: 'advanced',
+    category: 'ConfigMaps and Secrets',
+    hint: 'subPath mounts one file without hiding the rest of the directory.',
+    exampleSolution: `kubectl create configmap app-config --from-literal=config.properties='color=blue'
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: subpath-cm
+spec:
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      command: ["sh", "-c", "cat /etc/app/config.properties; sleep 3600"]
+      volumeMounts:
+        - name: config
+          mountPath: /etc/app/config.properties
+          subPath: config.properties
+  volumes:
+    - name: config
+      configMap:
+        name: app-config
+EOF
+kubectl logs subpath-cm`,
+  },
+  {
+    id: 'job-completions',
+    title: 'Set Job completions',
+    description:
+      'Create a Job with completions=3 and parallelism=1, then wait until it completes.',
+    difficulty: 'intermediate',
+    category: 'Jobs and CronJobs',
+    hint: 'completions controls how many successful Pods are required.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: three-shot
+spec:
+  completions: 3
+  parallelism: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: worker
+          image: busybox:1.36
+          command: ["sh", "-c", "echo ok; sleep 1"]
+EOF
+kubectl wait --for=condition=complete job/three-shot --timeout=120s
+kubectl get pods -l job-name=three-shot`,
+  },
+  {
+    id: 'job-active-deadline',
+    title: 'Set activeDeadlineSeconds on a Job',
+    description:
+      'Create a long-running Job with activeDeadlineSeconds=30 and observe it fail when the deadline is exceeded.',
+    difficulty: 'advanced',
+    category: 'Jobs and CronJobs',
+    hint: 'activeDeadlineSeconds limits total Job runtime.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: deadline-job
+spec:
+  activeDeadlineSeconds: 30
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: slow
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 120"]
+EOF
+kubectl get job deadline-job -w`,
+  },
+  {
+    id: 'cronjob-manual',
+    title: 'Create a Job from a CronJob',
+    description:
+      'Create a CronJob, then manually trigger one Job with kubectl create job --from=cronjob/...',
+    difficulty: 'intermediate',
+    category: 'Jobs and CronJobs',
+    hint: 'Manual triggers are useful for testing schedules without waiting.',
+    exampleSolution: `kubectl create cronjob tick --image=busybox:1.36 --schedule="0 0 * * *" -- date
+kubectl create job tick-manual --from=cronjob/tick
+kubectl get jobs
+kubectl logs job/tick-manual`,
+  },
+  {
+    id: 'cronjob-history',
+    title: 'Limit CronJob history',
+    description:
+      'Set successfulJobsHistoryLimit and failedJobsHistoryLimit on a CronJob and confirm the fields.',
+    difficulty: 'intermediate',
+    category: 'Jobs and CronJobs',
+    hint: 'History limits keep old Jobs from cluttering the namespace.',
+    exampleSolution: `kubectl create cronjob hist --image=busybox:1.36 --schedule="*/5 * * * *" -- date
+kubectl patch cronjob hist -p '{"spec":{"successfulJobsHistoryLimit":1,"failedJobsHistoryLimit":1}}'
+kubectl get cronjob hist -o yaml | sed -n '/successfulJobsHistoryLimit/,/failedJobsHistoryLimit/p'`,
+  },
+  {
+    id: 'job-delete-pods',
+    title: 'Clean up a finished Job',
+    description:
+      'Run a Job to completion, then delete the Job and confirm its Pods are removed.',
+    difficulty: 'beginner',
+    category: 'Jobs and CronJobs',
+    hint: 'Deleting a Job cascades to Pods it owns by default.',
+    exampleSolution: `kubectl create job cleanup-me --image=busybox:1.36 -- echo done
+kubectl wait --for=condition=complete job/cleanup-me --timeout=60s
+kubectl delete job cleanup-me
+kubectl get pods -l job-name=cleanup-me`,
+  },
+  {
+    id: 'trouble-wide',
+    title: 'Use kubectl get -o wide',
+    description:
+      'List Pods with -o wide and identify node names and Pod IPs.',
+    difficulty: 'beginner',
+    category: 'Troubleshooting',
+    hint: 'wide adds useful columns that the default table hides.',
+    exampleSolution: `kubectl run web --image=nginx:1.27
+kubectl get pods -o wide`,
+  },
+  {
+    id: 'trouble-explain',
+    title: 'Explain an API field',
+    description:
+      'Use kubectl explain to read documentation for pod.spec.containers.resources.',
+    difficulty: 'beginner',
+    category: 'Troubleshooting',
+    hint: 'explain works offline against your cluster’s OpenAPI.',
+    exampleSolution: `kubectl explain pod.spec.containers.resources
+kubectl explain pod.spec.containers.resources.requests`,
+  },
+  {
+    id: 'trouble-api-resources',
+    title: 'List API resources',
+    description:
+      'Run kubectl api-resources and find the shortname for deployments and configmaps.',
+    difficulty: 'beginner',
+    category: 'Troubleshooting',
+    hint: 'Shortnames like deploy and cm speed up everyday kubectl.',
+    exampleSolution: `kubectl api-resources | grep -E 'deployments|configmaps'`,
+  },
+  {
+    id: 'trouble-diff',
+    title: 'Diff a live object against YAML',
+    description:
+      'Change a Deployment YAML locally and use kubectl diff to preview the cluster delta before apply.',
+    difficulty: 'intermediate',
+    category: 'Troubleshooting',
+    hint: 'diff is safer than apply when you want to review first.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27 --replicas=1
+kubectl get deploy web -o yaml > web.yaml
+# edit replicas in web.yaml to 2, then:
+sed -i.bak 's/replicas: 1/replicas: 2/' web.yaml || sed -i '' 's/replicas: 1/replicas: 2/' web.yaml
+kubectl diff -f web.yaml || true`,
+  },
+  {
+    id: 'trouble-wait',
+    title: 'Wait for a condition',
+    description:
+      'Create a Deployment and use kubectl wait --for=condition=Available before continuing.',
+    difficulty: 'beginner',
+    category: 'Troubleshooting',
+    hint: 'wait is essential in scripts and CI against clusters.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27 --replicas=2
+kubectl wait --for=condition=Available deployment/web --timeout=90s
+kubectl get deploy web`,
+  },
+  {
+    id: 'trouble-field-manager',
+    title: 'Inspect managedFields',
+    description:
+      'Describe or get -o yaml a live object and locate managedFields to see which managers own which paths.',
+    difficulty: 'advanced',
+    category: 'Troubleshooting',
+    hint: 'Server-side apply uses field managers; conflicts show up here.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27
+kubectl get deploy web -o yaml | sed -n '/managedFields:/,/spec:/p' | head -n 40`,
+  },
+  {
+    id: 'trouble-oom',
+    title: 'Provoke and spot an OOMKilled Pod',
+    description:
+      'Create a Pod with a tiny memory limit that allocates more memory, then identify OOMKilled in describe/logs.',
+    difficulty: 'advanced',
+    category: 'Troubleshooting',
+    hint: 'Last State / Reason: OOMKilled appears when the cgroup limit is hit.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: oom-demo
+spec:
+  restartPolicy: Never
+  containers:
+    - name: stress
+      image: polinux/stress
+      command: ["stress"]
+      args: ["--vm", "1", "--vm-bytes", "20M", "--vm-hang", "0"]
+      resources:
+        limits:
+          memory: 10Mi
+EOF
+kubectl describe pod oom-demo | sed -n '/State:/,/Ready/p'`,
+  },
+  {
+    id: 'net-service-dns-short',
+    title: 'Resolve a Service short name',
+    description:
+      'From a Pod in the same namespace, resolve a Service using only its short DNS name.',
+    difficulty: 'beginner',
+    category: 'Networking',
+    hint: 'Same-namespace lookups can omit .svc.cluster.local.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27
+kubectl expose deployment web --port=80 --name=web-svc
+kubectl run digpod --image=busybox:1.36 --restart=Never -- sleep 3600
+kubectl wait --for=condition=Ready pod/digpod --timeout=60s
+kubectl exec digpod -- nslookup web-svc`,
+  },
+  {
+    id: 'net-wget-pod-ip',
+    title: 'HTTP GET a Pod IP',
+    description:
+      'Fetch the Pod IP of nginx and wget it from another Pod to prove Pod networking works.',
+    difficulty: 'beginner',
+    category: 'Networking',
+    hint: 'Pod IPs are reachable cluster-wide with most CNIs.',
+    exampleSolution: `kubectl run web --image=nginx:1.27
+kubectl wait --for=condition=Ready pod/web --timeout=60s
+IP=$(kubectl get pod web -o jsonpath='{.status.podIP}')
+kubectl run client --rm -it --image=busybox:1.36 --restart=Never -- wget -qO- http://$IP`,
+  },
+  {
+    id: 'net-policy-allow-same-app',
+    title: 'Allow Ingress only from app=frontend',
+    description:
+      'Write a NetworkPolicy that allows Ingress to app=api only from Pods labeled app=frontend.',
+    difficulty: 'advanced',
+    category: 'Networking',
+    hint: 'Combine podSelector on the target with ingress.from.podSelector.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-from-frontend
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 80
+EOF
+kubectl get networkpolicy api-from-frontend -o yaml`,
+  },
+  {
+    id: 'net-ingress-path',
+    title: 'Add a second Ingress path',
+    description:
+      'Create an Ingress with two paths (/ and /api) pointing at two Services (can be the same Service in a lab).',
+    difficulty: 'advanced',
+    category: 'Networking',
+    hint: 'pathType Prefix is common for simple apps.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27
+kubectl expose deployment web --port=80 --name=web-svc
+kubectl create deployment api --image=nginx:1.27
+kubectl expose deployment api --port=80 --name=api-svc
+cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: multi-path
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-svc
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-svc
+                port:
+                  number: 80
+EOF
+kubectl get ingress multi-path`,
+  },
+  {
+    id: 'net-port-name',
+    title: 'Probe DNS for svc and svc.svc',
+    description:
+      'From a debug Pod, nslookup kubernetes and svc.svc forms and compare the answers.',
+    difficulty: 'intermediate',
+    category: 'Networking',
+    hint: 'Search domains in /etc/resolv.conf make short names work.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27
+kubectl expose deployment web --port=80 --name=web-svc
+kubectl run digpod --image=busybox:1.36 --restart=Never -- sleep 3600
+kubectl wait --for=condition=Ready pod/digpod --timeout=60s
+kubectl exec digpod -- nslookup web-svc
+kubectl exec digpod -- nslookup web-svc.default.svc`,
+  },
+  {
+    id: 'storage-emptydir-medium',
+    title: 'Use Memory emptyDir',
+    description:
+      'Create a Pod with emptyDir.medium=Memory, write a file, and note it is backed by tmpfs.',
+    difficulty: 'intermediate',
+    category: 'Storage',
+    hint: 'Memory emptyDir counts against the container memory limit.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tmpfs-pod
+spec:
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      command: ["sh", "-c", "df -h /cache; echo hi > /cache/x; sleep 3600"]
+      volumeMounts:
+        - name: cache
+          mountPath: /cache
+  volumes:
+    - name: cache
+      emptyDir:
+        medium: Memory
+EOF
+kubectl logs tmpfs-pod`,
+  },
+  {
+    id: 'storage-pvc-status',
+    title: 'Watch a PVC become Bound',
+    description:
+      'Create a 1Gi PVC and wait until its phase is Bound (requires a default StorageClass).',
+    difficulty: 'beginner',
+    category: 'Storage',
+    hint: 'Pending usually means no provisioner/StorageClass.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wait-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+EOF
+kubectl get pvc wait-pvc -w`,
+  },
+  {
+    id: 'storage-pod-pvc-delete',
+    title: 'See data persist across Pod recreate',
+    description:
+      'Mount a PVC, write a file, delete the Pod, recreate it with the same claim, and read the file again.',
+    difficulty: 'intermediate',
+    category: 'Storage',
+    hint: 'PVC lifetime is independent of a single Pod.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: persist-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: persist-a
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo kept > /data/file; sleep 3600"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: persist-pvc
+EOF
+kubectl wait --for=condition=Ready pod/persist-a --timeout=90s
+kubectl delete pod persist-a
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: persist-b
+spec:
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "cat /data/file; sleep 3600"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: persist-pvc
+EOF
+kubectl logs persist-b`,
+  },
+  {
+    id: 'storage-sts-volumeclaim',
+    title: 'Add volumeClaimTemplates to a StatefulSet',
+    description:
+      'Create a StatefulSet with a volumeClaimTemplates entry and verify a PVC is created per ordinal.',
+    difficulty: 'advanced',
+    category: 'Storage',
+    hint: 'Each StatefulSet Pod gets its own PVC named <template>-<podname>.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: sts-svc
+spec:
+  clusterIP: None
+  selector:
+    app: sts-data
+  ports:
+    - port: 80
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sts-data
+spec:
+  serviceName: sts-svc
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sts-data
+  template:
+    metadata:
+      labels:
+        app: sts-data
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          volumeMounts:
+            - name: www
+              mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+    - metadata:
+        name: www
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+EOF
+kubectl get pvc`,
+  },
+  {
+    id: 'storage-df-exec',
+    title: 'Check free space inside a volume',
+    description:
+      'Exec into a Pod with a mounted volume and run df -h on the mount path.',
+    difficulty: 'beginner',
+    category: 'Storage',
+    hint: 'df shows the filesystem backing the mount from the container’s view.',
+    exampleSolution: `kubectl run volcheck --image=busybox:1.36 --restart=Never -- sleep 3600
+kubectl wait --for=condition=Ready pod/volcheck --timeout=60s
+kubectl exec volcheck -- df -h /`,
+  },
+  {
+    id: 'scale-hpa-describe',
+    title: 'Read HPA conditions',
+    description:
+      'Create an HPA and use describe to read AbleToScale / ScalingActive conditions.',
+    difficulty: 'intermediate',
+    category: 'Scaling',
+    hint: 'Missing metrics-server usually shows ScalingActive=False.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27
+kubectl autoscale deployment web --cpu-percent=50 --min=1 --max=4
+kubectl describe hpa web`,
+  },
+  {
+    id: 'scale-deploy-get',
+    title: 'Watch replica counts during scale',
+    description:
+      'Scale a Deployment from 1 to 6 and use kubectl get pods -w to watch creations.',
+    difficulty: 'beginner',
+    category: 'Scaling',
+    hint: 'Ctrl+C stops the watch when you have seen enough.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27 --replicas=1
+kubectl scale deployment/web --replicas=6
+kubectl get pods -l app=web -w`,
+  },
+  {
+    id: 'scale-pdb-maxunavailable',
+    title: 'Create a PDB with maxUnavailable',
+    description:
+      'Define a PodDisruptionBudget using maxUnavailable: 1 for an app label.',
+    difficulty: 'advanced',
+    category: 'Scaling',
+    hint: 'Use either minAvailable or maxUnavailable — not both.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27 --replicas=3
+cat <<'EOF' | kubectl apply -f -
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: web-maxunavail
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: web
+EOF
+kubectl get pdb web-maxunavail`,
+  },
+  {
+    id: 'scale-sts-replicas',
+    title: 'Scale a StatefulSet',
+    description:
+      'Create a StatefulSet with 1 replica, scale to 3, and confirm ordinals 0..2 exist.',
+    difficulty: 'intermediate',
+    category: 'Scaling',
+    hint: 'StatefulSet scaling adds/removes highest ordinals first when decreasing.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-sts
+spec:
+  clusterIP: None
+  selector:
+    app: web-sts
+  ports:
+    - port: 80
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web-sts
+spec:
+  serviceName: web-sts
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-sts
+  template:
+    metadata:
+      labels:
+        app: web-sts
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+EOF
+kubectl scale statefulset web-sts --replicas=3
+kubectl get pods -l app=web-sts`,
+  },
+  {
+    id: 'scale-rs-direct',
+    title: 'Inspect the ReplicaSet behind a Deployment',
+    description:
+      'Scale a Deployment and identify the ReplicaSet that owns the Pods.',
+    difficulty: 'beginner',
+    category: 'Scaling',
+    hint: 'Deployments own ReplicaSets; you usually scale the Deployment, not the RS.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27 --replicas=2
+kubectl get rs -l app=web
+kubectl describe rs -l app=web | head -n 30`,
+  },
+  {
+    id: 'sec-sa-token',
+    title: 'Check projected SA token mount',
+    description:
+      'Run a Pod and list /var/run/secrets/kubernetes.io/serviceaccount to see the projected token files.',
+    difficulty: 'beginner',
+    category: 'Security',
+    hint: 'Modern clusters mount a projected, time-bound token.',
+    exampleSolution: `kubectl run sa-check --image=busybox:1.36 --restart=Never -- sleep 3600
+kubectl wait --for=condition=Ready pod/sa-check --timeout=60s
+kubectl exec sa-check -- ls -l /var/run/secrets/kubernetes.io/serviceaccount`,
+  },
+  {
+    id: 'sec-automount-off',
+    title: 'Disable ServiceAccount token automount',
+    description:
+      'Create a Pod with automountServiceAccountToken: false and confirm the token directory is absent.',
+    difficulty: 'intermediate',
+    category: 'Security',
+    hint: 'Disable automount when a workload does not need the API.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-token
+spec:
+  automountServiceAccountToken: false
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      command: ["sh", "-c", "ls /var/run/secrets/kubernetes.io/serviceaccount || echo missing; sleep 3600"]
+EOF
+kubectl logs no-token`,
+  },
+  {
+    id: 'sec-role-secrets',
+    title: 'RBAC: allow get on Secrets',
+    description:
+      'Create a Role that can get/list Secrets and bind it to a ServiceAccount; verify with auth can-i.',
+    difficulty: 'advanced',
+    category: 'Security',
+    hint: 'Secret access is sensitive — practice only in lab namespaces.',
+    exampleSolution: `kubectl create serviceaccount secret-reader
+kubectl create role secret-reader --verb=get,list --resource=secrets
+kubectl create rolebinding secret-reader --role=secret-reader --serviceaccount=default:secret-reader
+kubectl auth can-i get secrets --as=system:serviceaccount:default:secret-reader`,
+  },
+  {
+    id: 'sec-pod-security-labels',
+    title: 'Label a Namespace for Pod Security',
+    description:
+      'Add pod-security.kubernetes.io/enforce=baseline to a Namespace and try a privileged Pod (expect denial on enforcing clusters).',
+    difficulty: 'advanced',
+    category: 'Security',
+    hint: 'Pod Security Admission uses namespace labels enforce/audit/warn.',
+    exampleSolution: `kubectl create namespace pss-lab
+kubectl label namespace pss-lab pod-security.kubernetes.io/enforce=baseline
+cat <<'EOF' | kubectl apply -f - || true
+apiVersion: v1
+kind: Pod
+metadata:
+  name: priv
+  namespace: pss-lab
+spec:
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.10
+      securityContext:
+        privileged: true
+EOF
+kubectl get events -n pss-lab --field-selector reason=FailedCreate`,
+  },
+  {
+    id: 'sec-runasgroup',
+    title: 'Set runAsGroup',
+    description:
+      'Create a Pod with runAsUser=1000 and runAsGroup=3000 and print id from inside.',
+    difficulty: 'intermediate',
+    category: 'Security',
+    hint: 'fsGroup is separate and affects volume ownership.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: group-pod
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      command: ["sh", "-c", "id; sleep 3600"]
+EOF
+kubectl logs group-pod`,
+  },
+  {
+    id: 'sec-networkpolicy-egress',
+    title: 'Restrict egress with NetworkPolicy',
+    description:
+      'Create a NetworkPolicy that denies all egress except DNS (UDP/TCP 53) for Pods labeled app=locked.',
+    difficulty: 'advanced',
+    category: 'Security',
+    hint: 'Forgetting DNS egress breaks name resolution immediately.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: locked-egress
+spec:
+  podSelector:
+    matchLabels:
+      app: locked
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+EOF
+kubectl get networkpolicy locked-egress`,
+  },
+  {
+    id: 'pod-lifecycle-hook',
+    title: 'Add a preStop lifecycle hook',
+    description:
+      'Create a Pod with a preStop exec hook that sleeps briefly, then delete the Pod and observe graceful shutdown.',
+    difficulty: 'advanced',
+    category: 'Pods',
+    hint: 'preStop runs before SIGTERM during termination.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: prestop
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      lifecycle:
+        preStop:
+          exec:
+            command: ["sh", "-c", "sleep 5"]
+EOF
+kubectl delete pod prestop --wait=false
+kubectl get pod prestop -w`,
+  },
+  {
+    id: 'deploy-topologyspread',
+    title: 'Add topologySpreadConstraints',
+    description:
+      'Create a Deployment with a preferred topology spread on kubernetes.io/hostname.',
+    difficulty: 'advanced',
+    category: 'Deployments',
+    hint: 'Spreading reduces correlated failure on one node.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spread-topo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spread-topo
+  template:
+    metadata:
+      labels:
+        app: spread-topo
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: spread-topo
+      containers:
+        - name: nginx
+          image: nginx:1.27
+EOF
+kubectl get pods -l app=spread-topo -o wide`,
+  },
+  {
+    id: 'cm-binary',
+    title: 'Inspect ConfigMap vs Secret encoding',
+    description:
+      'Create a tiny Secret and ConfigMap with the same string and compare how data appears in -o yaml.',
+    difficulty: 'beginner',
+    category: 'ConfigMaps and Secrets',
+    hint: 'Secret data is base64-encoded in API output; ConfigMap data is plain.',
+    exampleSolution: `kubectl create configmap plain --from-literal=token=hello
+kubectl create secret generic encoded --from-literal=token=hello
+kubectl get configmap plain -o yaml
+kubectl get secret encoded -o yaml`,
+  },
+  {
+    id: 'net-coredns',
+    title: 'Inspect CoreDNS Pods',
+    description:
+      'Find CoreDNS Pods in kube-system and check they are Ready.',
+    difficulty: 'beginner',
+    category: 'Networking',
+    hint: 'DNS issues often start with CoreDNS not Ready.',
+    exampleSolution: `kubectl get pods -n kube-system -l k8s-app=kube-dns
+kubectl get svc -n kube-system kube-dns`,
+  },
+  {
+    id: 'trouble-logs-timestamps',
+    title: 'Show log timestamps',
+    description:
+      'Fetch Pod logs with --timestamps and identify when the last lines were written.',
+    difficulty: 'beginner',
+    category: 'Troubleshooting',
+    hint: 'Timestamps help correlate logs with Events.',
+    exampleSolution: `kubectl run logger --image=busybox:1.36 --restart=Never -- sh -c "echo hello; sleep 2; echo world"
+kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/logger --timeout=60s || true
+kubectl logs logger --timestamps`,
+  },
+  {
+    id: 'deploy-selector-label-change',
+    title: 'Understand immutable selectors',
+    description:
+      'Try to change a Deployment selector after creation and observe that the API rejects it.',
+    difficulty: 'intermediate',
+    category: 'Deployments',
+    hint: 'spec.selector is immutable on Deployments after creation.',
+    exampleSolution: `kubectl create deployment web --image=nginx:1.27
+kubectl patch deployment web --type json -p='[{"op":"replace","path":"/spec/selector/matchLabels/app","value":"other"}]' || true`,
+  },
+  {
+    id: 'job-restart-onfailure',
+    title: 'Use restartPolicy OnFailure in a Job',
+    description:
+      'Create a Job Pod template with restartPolicy: OnFailure and confirm the policy is set.',
+    difficulty: 'intermediate',
+    category: 'Jobs and CronJobs',
+    hint: 'Jobs allow Never or OnFailure — not Always.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: onfailure-job
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: ok
+          image: busybox:1.36
+          command: ["echo", "ok"]
+EOF
+kubectl get job onfailure-job -o jsonpath='{.spec.template.spec.restartPolicy}{"\\n"}'`,
+  },
+  {
+    id: 'scale-cpu-request-note',
+    title: 'Confirm requests before HPA',
+    description:
+      'Create a Deployment with an explicit cpu request, then create an HPA targeting CPU utilization.',
+    difficulty: 'intermediate',
+    category: 'Scaling',
+    hint: 'CPU-based HPA needs resource requests to compute utilization.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpa-ready
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hpa-ready
+  template:
+    metadata:
+      labels:
+        app: hpa-ready
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          resources:
+            requests:
+              cpu: 100m
+EOF
+kubectl autoscale deployment hpa-ready --cpu-percent=70 --min=1 --max=3
+kubectl get hpa`,
+  },
+  {
+    id: 'storage-sc-yaml',
+    title: 'Read default StorageClass YAML',
+    description:
+      'Export the default StorageClass to YAML and identify the provisioner field.',
+    difficulty: 'beginner',
+    category: 'Storage',
+    hint: 'provisioner names differ between kind, k3d, and cloud providers.',
+    exampleSolution: `kubectl get storageclass
+kubectl get storageclass -o yaml | sed -n '/provisioner:/p'`,
+  },
+  {
+    id: 'sec-can-i-namespace',
+    title: 'Test permissions with auth can-i',
+    description:
+      'Use kubectl auth can-i create pods in the current namespace for your current user.',
+    difficulty: 'beginner',
+    category: 'Security',
+    hint: 'can-i is the quickest RBAC sanity check.',
+    exampleSolution: `kubectl auth can-i create pods
+kubectl auth can-i list secrets
+kubectl auth can-i '*' '*' --all-namespaces || true`,
+  },
+  {
+    id: 'net-endpoints-empty',
+    title: 'Create a Service with no Pods',
+    description:
+      'Create a Service selector that matches nothing and confirm Endpoints are empty.',
+    difficulty: 'beginner',
+    category: 'Services',
+    hint: 'Empty Endpoints usually mean a label mismatch.',
+    exampleSolution: `kubectl create service clusterip orphan --tcp=80:80
+kubectl get endpoints orphan
+kubectl describe svc orphan`,
+  },
+  {
+    id: 'pod-termination-grace',
+    title: 'Set terminationGracePeriodSeconds',
+    description:
+      'Create a Pod with terminationGracePeriodSeconds: 10 and confirm the field, then delete it.',
+    difficulty: 'intermediate',
+    category: 'Pods',
+    hint: 'This controls how long kubelet waits after SIGTERM before SIGKILL.',
+    exampleSolution: `cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grace
+spec:
+  terminationGracePeriodSeconds: 10
+  containers:
+    - name: nginx
+      image: nginx:1.27
+EOF
+kubectl get pod grace -o jsonpath='{.spec.terminationGracePeriodSeconds}{"\\n"}'
+kubectl delete pod grace`,
+  },
+  {
+    id: 'deploy-imagepullsecrets',
+    title: 'Attach imagePullSecrets to a Pod template',
+    description:
+      'Create a docker-registry Secret and reference it from a Deployment Pod template.',
+    difficulty: 'advanced',
+    category: 'Deployments',
+    hint: 'imagePullSecrets are under template.spec, not the container.',
+    exampleSolution: `kubectl create secret docker-registry regcred \\
+  --docker-server=example.registry.local \\
+  --docker-username=demo \\
+  --docker-password=demo \\
+  --docker-email=demo@example.com
+cat <<'EOF' | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pull-secret-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pull-secret-deploy
+  template:
+    metadata:
+      labels:
+        app: pull-secret-deploy
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: nginx
+          image: nginx:1.27
+EOF
+kubectl get deploy pull-secret-deploy -o yaml | sed -n '/imagePullSecrets:/,/containers:/p'`,
+  },
+  {
+    id: 'cm-env-keyref',
+    title: 'Map one ConfigMap key to an env var',
+    description:
+      'Use configMapKeyRef to inject a single ConfigMap key as DATABASE_URL.',
+    difficulty: 'intermediate',
+    category: 'ConfigMaps and Secrets',
+    hint: 'Prefer keyRef when you do not want every key as an env var.',
+    exampleSolution: `kubectl create configmap db --from-literal=url=postgres://localhost:5432/app
+cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: keyref
+spec:
+  containers:
+    - name: busybox
+      image: busybox:1.36
+      command: ["sh", "-c", "printenv DATABASE_URL; sleep 3600"]
+      env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: db
+              key: url
+EOF
+kubectl logs keyref`,
+  },
+  {
+    id: 'trouble-node-describe-taints',
+    title: 'Read node taints',
+    description:
+      'Describe a node and locate Taints; explain what NoSchedule would mean for Pods.',
+    difficulty: 'intermediate',
+    category: 'Troubleshooting',
+    hint: 'Control-plane nodes are often tainted so regular workloads stay off them.',
+    exampleSolution: `kubectl get nodes
+kubectl describe node | sed -n '/Taints:/,/Unschedulable:/p'`,
+  },
+  {
+    id: 'batch-cron-timezone',
+    title: 'Inspect CronJob schedule field',
+    description:
+      'Create a CronJob and print its schedule; optionally note timeZone if your cluster supports it.',
+    difficulty: 'beginner',
+    category: 'Jobs and CronJobs',
+    hint: 'CronJob schedules are UTC unless timeZone is set (1.25+).',
+    exampleSolution: `kubectl create cronjob tz-demo --image=busybox:1.36 --schedule="30 1 * * *" -- date
+kubectl get cronjob tz-demo -o jsonpath='{.spec.schedule}{"\\n"}'`,
+  },
+  {
+    id: 'pod-label-overwrite',
+    title: 'Overwrite an existing label',
+    description:
+      'Create a Pod with app=web, then overwrite the label to app=api using kubectl label --overwrite.',
+    difficulty: 'beginner',
+    category: 'Pods',
+    hint: 'Without --overwrite, changing an existing label key fails.',
+    exampleSolution: `kubectl run labeled --image=nginx:1.27 --labels=app=web
+kubectl label pod labeled app=api --overwrite
+kubectl get pod labeled --show-labels`,
+  },
 ]
 
 export function getChallengeById(id: string): EnrichedChallenge | undefined {

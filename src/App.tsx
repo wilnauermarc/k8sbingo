@@ -61,30 +61,32 @@ export default function App() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <Header />
 
-      <BoardControls
-        difficultyFilter={difficultyFilter}
-        learningPathId={learningPathId}
-        completedCount={completedCount}
-        bingoCount={completedLines.length}
-        weeklyCompleted={weeklyCompleted}
-        weeklyGoal={weeklyGoal}
-        streakDays={streakDays}
-        onDifficultyChange={changeDifficultyFilter}
-        onLearningPathChange={changeLearningPath}
-        onNewBoard={requestNewBoard}
-        onResetProgress={requestReset}
-      />
-
-      <main className="rounded-2xl border border-border bg-surface-raised/50 p-3 sm:p-5">
-        <BingoBoard
-          cells={cells}
-          completedLines={completedLines}
-          onCellClick={setSelectedIndex}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)] lg:gap-5">
+        <BoardControls
+          difficultyFilter={difficultyFilter}
+          learningPathId={learningPathId}
+          completedCount={completedCount}
+          bingoCount={completedLines.length}
+          weeklyCompleted={weeklyCompleted}
+          weeklyGoal={weeklyGoal}
+          streakDays={streakDays}
+          onDifficultyChange={changeDifficultyFilter}
+          onLearningPathChange={changeLearningPath}
+          onNewBoard={requestNewBoard}
+          onResetProgress={requestReset}
         />
-      </main>
+
+        <main className="min-w-0 rounded-2xl border border-border bg-surface-raised/50 p-3 sm:p-5">
+          <BingoBoard
+            cells={cells}
+            completedLines={completedLines}
+            onCellClick={setSelectedIndex}
+          />
+        </main>
+      </div>
 
       <footer className="space-y-2 pb-4 text-center text-xs text-ink-muted">
         <p>

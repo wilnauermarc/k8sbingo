@@ -24,7 +24,6 @@ export function BingoBoard({
           <BingoCell
             key={`${cell.challenge.id}-${index}`}
             cell={cell}
-            index={index}
             inBingoLine={isCellInAnyLine(index, completedLines)}
             onClick={() => onCellClick(index)}
           />

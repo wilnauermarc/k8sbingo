@@ -9,9 +9,13 @@ Complete real cluster challenges in your own local environment (kind, k3d, Minik
 ## Features
 
 - Responsive 5×5 bingo board (horizontal scroll on small screens)
+- Learning path modes (workloads, networking, troubleshooting, …)
 - 70+ seeded Kubernetes challenges across common topics
 - 24 random tasks per board + free center square
+- “Why it matters” context plus before/after learning checklist
+- Estimated duration per challenge
 - Challenge detail modal with optional hint and example `kubectl` / YAML
+- Weekly goal (3 challenges) and day streak tracking
 - Visually distinct completed fields
 - Automatic detection of horizontal, vertical, and diagonal bingo lines
 - Celebration when a new bingo is completed
@@ -58,10 +62,10 @@ npm run lint      # oxlint
 ```
 src/
   components/   # Board, cells, modal, controls, dialogs, celebration
-  data/         # Challenge definitions (separate from UI)
-  hooks/        # useBingoBoard — board state + localStorage
+  data/         # Challenges + learning paths
+  hooks/        # useBingoBoard — board state, streak, localStorage
   types/        # Shared TypeScript types
-  utils/        # Board generation + pure bingo detection
+  utils/        # Board generation, bingo detection, enrichment, streak
 ```
 
 Netlify builds with `npm run build` and publishes `dist` (see `netlify.toml`).

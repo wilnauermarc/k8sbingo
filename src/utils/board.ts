@@ -1,9 +1,13 @@
-import { CHALLENGES, FREE_SPACE, getChallengeById } from '../data/challenges'
+import { getAllChallenges, getChallengeById, FREE_SPACE } from '../data/challenges'
+import { categoriesForPath } from '../data/learningPaths'
+import { enrichChallenge } from './challengeEnrichment'
 import type {
   BoardCell,
   Challenge,
   Difficulty,
   DifficultyFilter,
+  EnrichedChallenge,
+  LearningPathId,
 } from '../types/challenge'
 import { BOARD_SIZE, CELL_COUNT } from './bingo'
 
@@ -18,22 +22,32 @@ function shuffle<T>(items: T[]): T[] {
   return copy
 }
 
-export function filterChallengesByDifficulty(
-  filter: DifficultyFilter,
-): Challenge[] {
-  if (filter === 'all') return [...CHALLENGES]
-  return CHALLENGES.filter((challenge) => challenge.difficulty === filter)
+export function filterChallenges(
+  difficulty: DifficultyFilter,
+  learningPathId: LearningPathId,
+): EnrichedChallenge[] {
+  const categories = categoriesForPath(learningPathId)
+  return getAllChallenges().filter((challenge) => {
+    const difficultyOk =
+      difficulty === 'all' || challenge.difficulty === difficulty
+    const pathOk =
+      categories === null || categories.includes(challenge.category)
+    return difficultyOk && pathOk
+  })
 }
 
 /**
  * Builds a 5x5 board: 24 challenges + free center.
- * Prefers the selected difficulty, then fills any shortfall from the full pool.
+ * Prefers learning path + difficulty, then fills shortfall from the full pool.
  */
-export function generateBoard(filter: DifficultyFilter = 'all'): BoardCell[] {
-  const preferred = shuffle(filterChallengesByDifficulty(filter))
+export function generateBoard(
+  difficulty: DifficultyFilter = 'all',
+  learningPathId: LearningPathId = 'mixed',
+): BoardCell[] {
+  const preferred = shuffle(filterChallenges(difficulty, learningPathId))
   const preferredIds = new Set(preferred.map((challenge) => challenge.id))
   const fillers = shuffle(
-    CHALLENGES.filter((challenge) => !preferredIds.has(challenge.id)),
+    getAllChallenges().filter((challenge) => !preferredIds.has(challenge.id)),
   )
   const selected = [...preferred, ...fillers].slice(0, CELL_COUNT - 1)
 
@@ -41,7 +55,7 @@ export function generateBoard(filter: DifficultyFilter = 'all'): BoardCell[] {
   let challengeIndex = 0
   for (let i = 0; i < CELL_COUNT; i += 1) {
     if (i === CENTER_INDEX) {
-      cells.push({ challenge: FREE_SPACE, completed: true })
+      cells.push({ challenge: enrichChallenge(FREE_SPACE), completed: true })
     } else {
       cells.push({ challenge: selected[challengeIndex], completed: false })
       challengeIndex += 1
@@ -66,7 +80,7 @@ export function cellsFromIds(
 
     const isFree = Boolean(challenge.isFree) || i === CENTER_INDEX
     cells.push({
-      challenge: isFree ? FREE_SPACE : challenge,
+      challenge: isFree ? enrichChallenge(FREE_SPACE) : challenge,
       completed: isFree || completedSet.has(challenge.id),
     })
   }
@@ -89,6 +103,12 @@ export function countByDifficulty(
   }
 
   return counts
+}
+
+export function filterChallengesByDifficulty(
+  filter: DifficultyFilter,
+): Challenge[] {
+  return filterChallenges(filter, 'mixed')
 }
 
 export { CENTER_INDEX, BOARD_SIZE }

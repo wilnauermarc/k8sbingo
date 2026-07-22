@@ -1,4 +1,5 @@
-import type { Challenge } from '../types/challenge'
+import type { Challenge, EnrichedChallenge } from '../types/challenge'
+import { enrichChallenge } from '../utils/challengeEnrichment'
 
 export const FREE_SPACE: Challenge = {
   id: 'free-space',
@@ -9,6 +10,10 @@ export const FREE_SPACE: Challenge = {
   category: 'Pods',
   hint: 'No action needed. This square is always completed.',
   exampleSolution: '# Free space — no kubectl required.',
+  why: 'A free space keeps bingo fair and reminds you that learning starts with showing up.',
+  estimatedMinutes: 0,
+  expect: 'No preparation needed — this square is already complete.',
+  successCheck: 'Nothing to verify. Pick a neighboring challenge and get hands-on.',
   isFree: true,
 }
 
@@ -1507,7 +1512,12 @@ kubectl rollout history deployment/web`,
   },
 ]
 
-export function getChallengeById(id: string): Challenge | undefined {
-  if (id === FREE_SPACE.id) return FREE_SPACE
-  return CHALLENGES.find((challenge) => challenge.id === id)
+export function getChallengeById(id: string): EnrichedChallenge | undefined {
+  if (id === FREE_SPACE.id) return enrichChallenge(FREE_SPACE)
+  const challenge = CHALLENGES.find((item) => item.id === id)
+  return challenge ? enrichChallenge(challenge) : undefined
+}
+
+export function getAllChallenges(): EnrichedChallenge[] {
+  return CHALLENGES.map(enrichChallenge)
 }

@@ -3,21 +3,71 @@ import type {
   BoardCell,
   BingoLine,
   DifficultyFilter,
+  LearningPathId,
+  LearningStats,
   PersistedBoardState,
+  PersistedBoardStateV1,
 } from '../types/challenge'
 import { detectBingoLines } from '../utils/bingo'
 import { cellsFromIds, generateBoard } from '../utils/board'
+import {
+  completionsThisWeek,
+  computeStreak,
+  createEmptyLearningStats,
+  recordCompletion,
+} from '../utils/streak'
 
 const STORAGE_KEY = 'kubernetes-bingo-v1'
+
+function isV1(value: unknown): value is PersistedBoardStateV1 {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'version' in value &&
+    (value as PersistedBoardStateV1).version === 1
+  )
+}
+
+function isV2(value: unknown): value is PersistedBoardState {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'version' in value &&
+    (value as PersistedBoardState).version === 2
+  )
+}
+
+function migrate(raw: unknown): PersistedBoardState | null {
+  if (isV2(raw)) {
+    if (!Array.isArray(raw.challengeIds)) return null
+    return {
+      ...raw,
+      learningPathId: raw.learningPathId ?? 'mixed',
+      learningStats: raw.learningStats ?? createEmptyLearningStats(),
+    }
+  }
+
+  if (isV1(raw)) {
+    if (!Array.isArray(raw.challengeIds)) return null
+    return {
+      version: 2,
+      challengeIds: raw.challengeIds,
+      completedIds: raw.completedIds ?? [],
+      difficultyFilter: raw.difficultyFilter ?? 'all',
+      learningPathId: 'mixed',
+      celebratedLineIds: raw.celebratedLineIds ?? [],
+      learningStats: createEmptyLearningStats(),
+    }
+  }
+
+  return null
+}
 
 function loadState(): PersistedBoardState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as PersistedBoardState
-    if (parsed.version !== 1) return null
-    if (!Array.isArray(parsed.challengeIds)) return null
-    return parsed
+    return migrate(JSON.parse(raw) as unknown)
   } catch {
     return null
   }
@@ -30,23 +80,29 @@ function saveState(state: PersistedBoardState): void {
 function toPersisted(
   cells: BoardCell[],
   difficultyFilter: DifficultyFilter,
+  learningPathId: LearningPathId,
   celebratedLineIds: string[],
+  learningStats: LearningStats,
 ): PersistedBoardState {
   return {
-    version: 1,
+    version: 2,
     challengeIds: cells.map((cell) => cell.challenge.id),
     completedIds: cells
       .filter((cell) => cell.completed && !cell.challenge.isFree)
       .map((cell) => cell.challenge.id),
     difficultyFilter,
+    learningPathId,
     celebratedLineIds,
+    learningStats,
   }
 }
 
-function createInitialBoard(filter: DifficultyFilter = 'all'): {
+function createInitialBoard(): {
   cells: BoardCell[]
   difficultyFilter: DifficultyFilter
+  learningPathId: LearningPathId
   celebratedLineIds: string[]
+  learningStats: LearningStats
 } {
   const saved = loadState()
   if (saved) {
@@ -55,15 +111,19 @@ function createInitialBoard(filter: DifficultyFilter = 'all'): {
       return {
         cells: restored,
         difficultyFilter: saved.difficultyFilter,
+        learningPathId: saved.learningPathId,
         celebratedLineIds: saved.celebratedLineIds ?? [],
+        learningStats: saved.learningStats ?? createEmptyLearningStats(),
       }
     }
   }
 
   return {
-    cells: generateBoard(filter),
-    difficultyFilter: filter,
+    cells: generateBoard('all', 'mixed'),
+    difficultyFilter: 'all',
+    learningPathId: 'mixed',
     celebratedLineIds: [],
+    learningStats: createEmptyLearningStats(),
   }
 }
 
@@ -73,14 +133,28 @@ export function useBingoBoard() {
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>(
     initial.difficultyFilter,
   )
+  const [learningPathId, setLearningPathId] = useState<LearningPathId>(
+    initial.learningPathId,
+  )
   const [celebratedLineIds, setCelebratedLineIds] = useState<string[]>(
     initial.celebratedLineIds,
+  )
+  const [learningStats, setLearningStats] = useState<LearningStats>(
+    initial.learningStats,
   )
   const [newBingoLines, setNewBingoLines] = useState<BingoLine[]>([])
 
   useEffect(() => {
-    saveState(toPersisted(cells, difficultyFilter, celebratedLineIds))
-  }, [cells, difficultyFilter, celebratedLineIds])
+    saveState(
+      toPersisted(
+        cells,
+        difficultyFilter,
+        learningPathId,
+        celebratedLineIds,
+        learningStats,
+      ),
+    )
+  }, [cells, difficultyFilter, learningPathId, celebratedLineIds, learningStats])
 
   const completedFlags = useMemo(
     () => cells.map((cell) => cell.completed),
@@ -97,35 +171,47 @@ export function useBingoBoard() {
     [cells],
   )
 
+  const weeklyCompleted = useMemo(
+    () => completionsThisWeek(learningStats),
+    [learningStats],
+  )
+
+  const streakDays = useMemo(
+    () => computeStreak(learningStats),
+    [learningStats],
+  )
+
   const toggleComplete = useCallback((challengeId: string) => {
-    setCells((prev) =>
-      prev.map((cell) => {
-        if (cell.challenge.id !== challengeId || cell.challenge.isFree) {
-          return cell
-        }
+    setCells((prev) => {
+      const target = prev.find((cell) => cell.challenge.id === challengeId)
+      if (!target || target.challenge.isFree) return prev
+
+      const markingComplete = !target.completed
+      if (markingComplete) {
+        setLearningStats((stats) => recordCompletion(stats))
+      }
+
+      return prev.map((cell) => {
+        if (cell.challenge.id !== challengeId) return cell
         return { ...cell, completed: !cell.completed }
-      }),
-    )
+      })
+    })
   }, [])
 
-  const markComplete = useCallback((challengeId: string, completed: boolean) => {
-    setCells((prev) =>
-      prev.map((cell) => {
-        if (cell.challenge.id !== challengeId || cell.challenge.isFree) {
-          return cell
-        }
-        return { ...cell, completed }
-      }),
-    )
-  }, [])
-
-  const newBoard = useCallback((filter: DifficultyFilter = difficultyFilter) => {
-    const next = generateBoard(filter)
-    setCells(next)
-    setDifficultyFilter(filter)
-    setCelebratedLineIds([])
-    setNewBingoLines([])
-  }, [difficultyFilter])
+  const newBoard = useCallback(
+    (
+      filter: DifficultyFilter = difficultyFilter,
+      pathId: LearningPathId = learningPathId,
+    ) => {
+      const next = generateBoard(filter, pathId)
+      setCells(next)
+      setDifficultyFilter(filter)
+      setLearningPathId(pathId)
+      setCelebratedLineIds([])
+      setNewBingoLines([])
+    },
+    [difficultyFilter, learningPathId],
+  )
 
   const resetProgress = useCallback(() => {
     setCells((prev) =>
@@ -142,7 +228,10 @@ export function useBingoBoard() {
     setDifficultyFilter(filter)
   }, [])
 
-  // Detect newly completed bingo lines and surface them once.
+  const changeLearningPath = useCallback((pathId: LearningPathId) => {
+    setLearningPathId(pathId)
+  }, [])
+
   useEffect(() => {
     const fresh = completedLines.filter(
       (line) => !celebratedLineIds.includes(line.id),
@@ -164,14 +253,18 @@ export function useBingoBoard() {
   return {
     cells,
     difficultyFilter,
+    learningPathId,
     completedLines,
     completedCount,
+    weeklyCompleted,
+    weeklyGoal: learningStats.weeklyGoal,
+    streakDays,
     newBingoLines,
     toggleComplete,
-    markComplete,
     newBoard,
     resetProgress,
     changeDifficultyFilter,
+    changeLearningPath,
     dismissBingoCelebration,
   }
 }

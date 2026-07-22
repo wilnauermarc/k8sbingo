@@ -5,6 +5,7 @@ import { BoardControls } from './components/BoardControls'
 import { ChallengeModal } from './components/ChallengeModal'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { Header } from './components/Header'
+import { getLearningPath } from './data/learningPaths'
 import { useBingoBoard } from './hooks/useBingoBoard'
 import type { BoardCell } from './types/challenge'
 
@@ -14,13 +15,18 @@ export default function App() {
   const {
     cells,
     difficultyFilter,
+    learningPathId,
     completedLines,
     completedCount,
+    weeklyCompleted,
+    weeklyGoal,
+    streakDays,
     newBingoLines,
     toggleComplete,
     newBoard,
     resetProgress,
     changeDifficultyFilter,
+    changeLearningPath,
     dismissBingoCelebration,
   } = useBingoBoard()
 
@@ -31,6 +37,7 @@ export default function App() {
     selectedIndex === null ? null : cells[selectedIndex]
 
   const hasProgress = completedCount > 0
+  const pathLabel = getLearningPath(learningPathId).label
 
   const requestNewBoard = () => {
     setConfirmAction('new-board')
@@ -43,7 +50,7 @@ export default function App() {
 
   const handleConfirm = () => {
     if (confirmAction === 'new-board') {
-      newBoard(difficultyFilter)
+      newBoard(difficultyFilter, learningPathId)
       setSelectedIndex(null)
     }
     if (confirmAction === 'reset') {
@@ -59,9 +66,14 @@ export default function App() {
 
       <BoardControls
         difficultyFilter={difficultyFilter}
+        learningPathId={learningPathId}
         completedCount={completedCount}
         bingoCount={completedLines.length}
+        weeklyCompleted={weeklyCompleted}
+        weeklyGoal={weeklyGoal}
+        streakDays={streakDays}
         onDifficultyChange={changeDifficultyFilter}
+        onLearningPathChange={changeLearningPath}
         onNewBoard={requestNewBoard}
         onResetProgress={requestReset}
       />
@@ -105,7 +117,7 @@ export default function App() {
       <ConfirmDialog
         open={confirmAction === 'new-board'}
         title="Create a new board?"
-        message="This replaces your current bingo board and clears completed challenges. Your difficulty selection will be used for the new draw."
+        message={`This replaces your current bingo board and clears completed challenges. Next board: ${pathLabel} · ${difficultyFilter === 'all' ? 'all levels' : difficultyFilter}.`}
         confirmLabel="Create new board"
         tone="primary"
         onConfirm={handleConfirm}
@@ -115,7 +127,7 @@ export default function App() {
       <ConfirmDialog
         open={confirmAction === 'reset'}
         title="Reset progress?"
-        message="This clears all completed challenges on the current board. The challenges themselves stay the same."
+        message="This clears all completed challenges on the current board. The challenges themselves stay the same. Your weekly streak stats are kept."
         confirmLabel="Reset progress"
         tone="danger"
         onConfirm={handleConfirm}

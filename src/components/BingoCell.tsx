@@ -1,17 +1,15 @@
-import { Check, Sparkles } from 'lucide-react'
+import { Check, Clock3, Sparkles } from 'lucide-react'
 import type { BoardCell } from '../types/challenge'
 import { DifficultyBadge } from './DifficultyBadge'
 
 interface BingoCellProps {
   cell: BoardCell
-  index: number
   inBingoLine: boolean
   onClick: () => void
 }
 
 export function BingoCell({
   cell,
-  index,
   inBingoLine,
   onClick,
 }: BingoCellProps) {
@@ -47,8 +45,9 @@ export function BingoCell({
             <Check className="size-3.5" strokeWidth={3} aria-hidden />
           </span>
         ) : (
-          <span className="text-[10px] tabular-nums text-ink-muted/70">
-            {index + 1}
+          <span className="inline-flex items-center gap-0.5 text-[10px] tabular-nums text-ink-muted/80">
+            <Clock3 className="size-2.5" aria-hidden />
+            {challenge.estimatedMinutes}m
           </span>
         )}
       </div>

@@ -8,9 +8,18 @@ import { Header } from './components/Header'
 import { OnboardingPanel } from './components/OnboardingPanel'
 import { getLearningPath } from './data/learningPaths'
 import { useBingoBoard } from './hooks/useBingoBoard'
-import type { BoardCell } from './types/challenge'
+import type {
+  BoardCell,
+  DifficultyFilter,
+  LearningPathId,
+} from './types/challenge'
 
 type ConfirmAction = 'new-board' | 'reset' | null
+
+interface PendingBoardOptions {
+  difficulty: DifficultyFilter
+  learningPathId: LearningPathId
+}
 
 export default function App() {
   const {
@@ -33,14 +42,23 @@ export default function App() {
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
+  const [pendingBoard, setPendingBoard] = useState<PendingBoardOptions | null>(
+    null,
+  )
 
   const selectedCell: BoardCell | null =
     selectedIndex === null ? null : cells[selectedIndex]
 
   const hasProgress = completedCount > 0
-  const pathLabel = getLearningPath(learningPathId).label
+  const nextDifficulty = pendingBoard?.difficulty ?? difficultyFilter
+  const nextPathId = pendingBoard?.learningPathId ?? learningPathId
+  const nextPathLabel = getLearningPath(nextPathId).label
 
   const requestNewBoard = () => {
+    setPendingBoard({
+      difficulty: difficultyFilter,
+      learningPathId,
+    })
     setConfirmAction('new-board')
   }
 
@@ -52,19 +70,28 @@ export default function App() {
   const applyStarterSetup = () => {
     changeDifficultyFilter('beginner')
     changeLearningPath('workloads')
+    setPendingBoard({
+      difficulty: 'beginner',
+      learningPathId: 'workloads',
+    })
     setConfirmAction('new-board')
   }
 
   const handleConfirm = () => {
     if (confirmAction === 'new-board') {
-      // Starter CTA sets filters just before confirm; always use current state.
-      newBoard(difficultyFilter, learningPathId)
+      newBoard(nextDifficulty, nextPathId)
       setSelectedIndex(null)
     }
     if (confirmAction === 'reset') {
       resetProgress()
       setSelectedIndex(null)
     }
+    setPendingBoard(null)
+    setConfirmAction(null)
+  }
+
+  const handleCancelConfirm = () => {
+    setPendingBoard(null)
     setConfirmAction(null)
   }
 
@@ -137,11 +164,11 @@ export default function App() {
       <ConfirmDialog
         open={confirmAction === 'new-board'}
         title="Create a new board?"
-        message={`This replaces your current bingo board and clears completed challenges. Next board: ${pathLabel} · ${difficultyFilter === 'all' ? 'all levels' : difficultyFilter}.`}
+        message={`This replaces your current bingo board and clears completed challenges. Next board: ${nextPathLabel} · ${nextDifficulty === 'all' ? 'all levels' : nextDifficulty}.`}
         confirmLabel="Create new board"
         tone="primary"
         onConfirm={handleConfirm}
-        onCancel={() => setConfirmAction(null)}
+        onCancel={handleCancelConfirm}
       />
 
       <ConfirmDialog
@@ -151,7 +178,7 @@ export default function App() {
         confirmLabel="Reset progress"
         tone="danger"
         onConfirm={handleConfirm}
-        onCancel={() => setConfirmAction(null)}
+        onCancel={handleCancelConfirm}
       />
 
       <BingoCelebration

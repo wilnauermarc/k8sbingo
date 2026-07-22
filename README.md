@@ -80,6 +80,10 @@ Netlify builds with `npm run build` and publishes `dist` (see `netlify.toml`).
 - Some advanced topics (NetworkPolicy, HPA metrics, ephemeral containers) depend on your cluster setup.
 - This project does **not** use the official Kubernetes logo.
 
+## Author
+
+Built by [Marc Wilnauer](https://marcwilnauer.de/) · [LinkedIn](https://www.linkedin.com/in/marc-w-599779252/)
+
 ## License
 
 Personal / learning project. Use and adapt as you like.

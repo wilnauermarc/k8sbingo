@@ -74,9 +74,22 @@ export default function App() {
         />
       </main>
 
-      <footer className="pb-4 text-center text-xs text-ink-muted">
-        Progress stays in this browser via localStorage. No cluster access — you
-        mark challenges complete yourself.
+      <footer className="space-y-2 pb-4 text-center text-xs text-ink-muted">
+        <p>
+          Progress stays in this browser via localStorage. No cluster access — you
+          mark challenges complete yourself.
+        </p>
+        <p>
+          Built by{' '}
+          <a
+            href="https://www.linkedin.com/in/marc-w-599779252/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-k8s-bright underline-offset-2 hover:underline"
+          >
+            Marc Wilnauer on LinkedIn
+          </a>
+        </p>
       </footer>
 
       <ChallengeModal

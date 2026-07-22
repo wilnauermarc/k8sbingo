@@ -10,6 +10,7 @@ import {
   ListChecks,
   MessageCircleQuestion,
   Play,
+  ShieldAlert,
   Target,
   Terminal,
   X,
@@ -214,8 +215,17 @@ export function ChallengeModal({
             </div>
           )}
 
-          <p className="rounded-xl border border-border bg-surface/60 px-3 py-2 text-xs text-ink-muted">
-            Completion is self-reported. This app does not verify your cluster.
+          <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs leading-relaxed text-amber-100/90">
+            <span className="mb-1 inline-flex items-center gap-1.5 font-semibold tracking-wide text-amber-300 uppercase">
+              <ShieldAlert className="size-3.5" />
+              Lab only
+            </span>
+            <span className="mt-1 block text-ink-muted">
+              Run example commands only on a local lab cluster (kind, k3d,
+              Minikube). Never paste them into shared, staging, or production
+              contexts. Completion is self-reported — this app cannot access your
+              cluster.
+            </span>
           </p>
 
           {!isFree && (
@@ -235,6 +245,14 @@ export function ChallengeModal({
                 icon={<Terminal className="size-4" />}
                 label="Example solution"
               >
+                <div className="mb-3 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-ink-muted">
+                  <strong className="font-semibold text-amber-300">
+                    Before you copy:
+                  </strong>{' '}
+                  confirm your kubecontext is a disposable lab cluster. Some
+                  examples intentionally create failing Pods, hostPath mounts, or
+                  RBAC bindings for learning.
+                </div>
                 <pre className="overflow-x-auto rounded-xl border border-border bg-surface p-3 text-xs leading-relaxed text-sky-100">
                   <code>{challenge.exampleSolution}</code>
                 </pre>

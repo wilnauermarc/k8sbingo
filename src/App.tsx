@@ -90,8 +90,12 @@ export default function App() {
 
       <footer className="space-y-2 pb-4 text-center text-xs text-ink-muted">
         <p>
-          Progress stays in this browser via localStorage. No cluster access — you
-          mark challenges complete yourself.
+          Progress stays in this browser via localStorage. No cookies or
+          trackers. No cluster access — you mark challenges complete yourself.
+        </p>
+        <p>
+          Example commands are for local lab clusters only (kind / k3d /
+          Minikube), not production.
         </p>
         <p>
           Built by{' '}

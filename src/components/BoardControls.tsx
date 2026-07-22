@@ -125,19 +125,39 @@ export function BoardControls({
         </button>
       </div>
 
-      <div className="mt-auto grid grid-cols-2 gap-2 border-t border-border pt-4 text-sm">
-        <Stat label="Completed" value={`${completedCount} / 24`} />
-        <Stat label="Bingo lines" value={String(bingoCount)} />
-        <Stat
-          label="This week"
-          value={`${weeklyCompleted} / ${weeklyGoal}`}
-          icon={<Target className="size-3.5 text-k8s-bright" />}
-        />
-        <Stat
-          label="Streak"
-          value={streakDays === 1 ? '1 day' : `${streakDays} days`}
-          icon={<Flame className="size-3.5 text-amber-300" />}
-        />
+      <div className="mt-auto space-y-3 border-t border-border pt-4">
+        <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">
+          Goals
+        </p>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <Stat
+            label="Completed"
+            value={`${completedCount} / 24`}
+            hint="Tiles done on this board"
+          />
+          <Stat
+            label="Bingo lines"
+            value={String(bingoCount)}
+            hint="Full row, column, or diagonal"
+          />
+          <Stat
+            label="This week"
+            value={`${weeklyCompleted} / ${weeklyGoal}`}
+            hint={`${weeklyGoal} challenges / week keeps you on track`}
+            icon={<Target className="size-3.5 text-k8s-bright" />}
+          />
+          <Stat
+            label="Streak"
+            value={streakDays === 1 ? '1 day' : `${streakDays} days`}
+            hint="Consecutive days with ≥1 completion"
+            icon={<Flame className="size-3.5 text-amber-300" />}
+          />
+        </div>
+        <p className="text-xs leading-relaxed text-ink-muted">
+          Board goal: complete lines (or blackout). Weekly goal: finish{' '}
+          {weeklyGoal} challenges to stay active — streak counts days in a row
+          with at least one completion.
+        </p>
       </div>
     </aside>
   )
@@ -146,16 +166,21 @@ export function BoardControls({
 function Stat({
   label,
   value,
+  hint,
   muted = false,
   icon,
 }: {
   label: string
   value: string
+  hint?: string
   muted?: boolean
   icon?: ReactNode
 }) {
   return (
-    <div className="rounded-xl border border-border bg-surface/50 px-3 py-2">
+    <div
+      className="rounded-xl border border-border bg-surface/50 px-3 py-2"
+      title={hint}
+    >
       <p className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-ink-muted uppercase">
         {icon}
         {label}
@@ -163,6 +188,9 @@ function Stat({
       <p className={`font-semibold ${muted ? 'text-ink-muted' : 'text-ink'}`}>
         {value}
       </p>
+      {hint && (
+        <p className="mt-0.5 text-[10px] leading-snug text-ink-muted/80">{hint}</p>
+      )}
     </div>
   )
 }

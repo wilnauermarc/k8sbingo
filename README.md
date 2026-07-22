@@ -9,13 +9,14 @@ Complete real cluster challenges in your own local environment (kind, k3d, Minik
 ## Features
 
 - Responsive 5×5 bingo board (horizontal scroll on small screens)
+- Onboarding: how it works, starter tip, and local lab setup links
 - Learning path modes (workloads, networking, troubleshooting, …)
 - 150+ seeded Kubernetes challenges across common topics
 - 24 random tasks per board + free center square
 - “Why it matters” context plus a Plan → Do → Verify → Reflect checklist
 - Estimated duration per challenge
 - Challenge detail modal with optional hint and example `kubectl` / YAML
-- Weekly goal (3 challenges) and day streak tracking
+- Clear goals: bingo lines, weekly target (3), and day streak
 - Visually distinct completed fields
 - Automatic detection of horizontal, vertical, and diagonal bingo lines
 - Celebration when a new bingo is completed

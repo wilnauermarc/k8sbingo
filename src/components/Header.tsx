@@ -19,9 +19,9 @@ export function Header() {
             </h1>
           </div>
           <p className="max-w-2xl text-sm leading-relaxed text-ink-muted sm:text-base">
-            Practice real kubectl skills on a 5×5 bingo board. Pick a learning
-            path, complete challenges in your own cluster (kind, k3d, or
-            Minikube), and build a weekly streak.
+            Practice real kubectl skills on a 5×5 bingo board. Complete
+            challenges in your own lab cluster, mark tiles done, and chase bingo
+            lines — at your pace.
           </p>
         </div>
       </div>

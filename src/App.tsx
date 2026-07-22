@@ -5,6 +5,7 @@ import { BoardControls } from './components/BoardControls'
 import { ChallengeModal } from './components/ChallengeModal'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { Header } from './components/Header'
+import { OnboardingPanel } from './components/OnboardingPanel'
 import { getLearningPath } from './data/learningPaths'
 import { useBingoBoard } from './hooks/useBingoBoard'
 import type { BoardCell } from './types/challenge'
@@ -48,8 +49,15 @@ export default function App() {
     setConfirmAction('reset')
   }
 
+  const applyStarterSetup = () => {
+    changeDifficultyFilter('beginner')
+    changeLearningPath('workloads')
+    setConfirmAction('new-board')
+  }
+
   const handleConfirm = () => {
     if (confirmAction === 'new-board') {
+      // Starter CTA sets filters just before confirm; always use current state.
       newBoard(difficultyFilter, learningPathId)
       setSelectedIndex(null)
     }
@@ -63,6 +71,8 @@ export default function App() {
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <Header />
+
+      <OnboardingPanel onApplyStarter={applyStarterSetup} />
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)] lg:gap-5">
         <BoardControls
@@ -89,6 +99,10 @@ export default function App() {
       </div>
 
       <footer className="space-y-2 pb-4 text-center text-xs text-ink-muted">
+        <p>
+          Built as a hands-on learning tool while preparing for advanced
+          Kubernetes / platform roles — practice beats slide decks.
+        </p>
         <p>
           Progress stays in this browser via localStorage. No cookies or
           trackers. No cluster access — you mark challenges complete yourself.

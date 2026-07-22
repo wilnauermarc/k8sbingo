@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { BingoBoard } from './components/BingoBoard'
 import { BingoCelebration } from './components/BingoCelebration'
 import { BoardControls } from './components/BoardControls'
@@ -6,7 +7,13 @@ import { ChallengeModal } from './components/ChallengeModal'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { Header } from './components/Header'
 import { OnboardingPanel } from './components/OnboardingPanel'
+import { StatsOptInBanner } from './components/StatsOptInBanner'
 import { getLearningPath } from './data/learningPaths'
+import {
+  trackTileCompleted,
+  useAnonymousTelemetry,
+  useStatsOptIn,
+} from './hooks/useAnonymousTelemetry'
 import { useBingoBoard } from './hooks/useBingoBoard'
 import type {
   BoardCell,
@@ -45,6 +52,8 @@ export default function App() {
   const [pendingBoard, setPendingBoard] = useState<PendingBoardOptions | null>(
     null,
   )
+  const { optedIn, setOptIn } = useStatsOptIn()
+  useAnonymousTelemetry(optedIn)
 
   const selectedCell: BoardCell | null =
     selectedIndex === null ? null : cells[selectedIndex]
@@ -101,6 +110,8 @@ export default function App() {
 
       <OnboardingPanel onApplyStarter={applyStarterSetup} />
 
+      <StatsOptInBanner optedIn={optedIn} onChange={setOptIn} />
+
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)] lg:gap-5">
         <BoardControls
           difficultyFilter={difficultyFilter}
@@ -131,8 +142,12 @@ export default function App() {
           Kubernetes / platform roles — practice beats slide decks.
         </p>
         <p>
-          Progress stays in this browser via localStorage. No cookies or
-          trackers. No cluster access — you mark challenges complete yourself.
+          Progress stays in this browser via localStorage. No cookies. Anonymous
+          aggregate stats are <strong className="font-medium text-ink">opt-in
+          only</strong> and never store IPs.{' '}
+          <Link to="/stats" className="text-k8s-bright hover:underline">
+            View public stats
+          </Link>
         </p>
         <p>
           Example commands are for local lab clusters only (kind / k3d /
@@ -157,7 +172,9 @@ export default function App() {
         onClose={() => setSelectedIndex(null)}
         onToggleComplete={() => {
           if (!selectedCell) return
+          const wasComplete = selectedCell.completed
           toggleComplete(selectedCell.challenge.id)
+          if (!wasComplete) trackTileCompleted(optedIn)
         }}
       />
 

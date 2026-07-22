@@ -1,11 +1,20 @@
 import { Boxes, Cloud } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export function Header() {
   return (
     <header className="space-y-4">
-      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-raised/80 px-3 py-1 text-xs font-medium text-ink-muted">
-        <Cloud className="size-3.5 text-k8s-bright" />
-        Hands-on learning · local cluster
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-raised/80 px-3 py-1 text-xs font-medium text-ink-muted">
+          <Cloud className="size-3.5 text-k8s-bright" />
+          Hands-on learning · local cluster
+        </div>
+        <Link
+          to="/stats"
+          className="text-xs font-medium text-k8s-bright hover:underline"
+        >
+          Anonymous stats
+        </Link>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

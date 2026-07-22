@@ -84,8 +84,18 @@ Netlify builds with `npm run build` and publishes `dist` (see `netlify.toml`).
 - Example commands and YAML are meant to be technically valid for a typical local cluster.
 - Some advanced topics (NetworkPolicy, HPA metrics, ephemeral containers) depend on your cluster setup.
 - **Lab only:** never run the example solutions against shared or production clusters.
-- This site is a static app (no backend). Progress is stored in your browser `localStorage` only — no cookies or trackers.
+- Progress is stored in your browser `localStorage` only.
+- **Anonymous stats (opt-in):** `/stats` shows public aggregates (sessions, minutes, tiles, country). No cookies, no IP storage, country from CDN edge only. Off by default — enable on the home page if you want to contribute.
 - This project does **not** use the official Kubernetes logo.
+
+### Local stats API
+
+Production uses Netlify Functions + Blobs. For local API testing:
+
+```bash
+npx netlify dev
+```
+
 
 ## Author
 

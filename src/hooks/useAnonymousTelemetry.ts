@@ -3,12 +3,12 @@ import {
   hasSentSessionBeacon,
   markSessionBeaconSent,
   postTrackEvent,
-  readStatsOptIn,
-  writeStatsOptIn,
+  readStatsEnabled,
+  writeStatsEnabled,
 } from '../utils/telemetry'
 
 /**
- * Opt-in anonymous telemetry: session + dwell heartbeats.
+ * Anonymous telemetry (opt-out): session + dwell heartbeats.
  * No cookies, no client ID sent to the server.
  */
 export function useAnonymousTelemetry(enabled: boolean) {
@@ -37,24 +37,24 @@ export function useAnonymousTelemetry(enabled: boolean) {
   }, [enabled])
 }
 
-export function useStatsOptIn() {
-  const [optedIn, setOptedIn] = useState(false)
+export function useStatsPreference() {
+  const [enabled, setEnabledState] = useState(true)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    setOptedIn(readStatsOptIn())
+    setEnabledState(readStatsEnabled())
     setReady(true)
   }, [])
 
-  const setOptIn = (value: boolean) => {
-    writeStatsOptIn(value)
-    setOptedIn(value)
+  const setEnabled = (value: boolean) => {
+    writeStatsEnabled(value)
+    setEnabledState(value)
   }
 
-  return { optedIn, setOptIn, ready }
+  return { enabled, setEnabled, ready }
 }
 
-export function trackTileCompleted(optedIn: boolean): void {
-  if (!optedIn) return
+export function trackTileCompleted(enabled: boolean): void {
+  if (!enabled) return
   void postTrackEvent('tile')
 }

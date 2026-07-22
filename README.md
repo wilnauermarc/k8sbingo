@@ -85,7 +85,7 @@ Netlify builds with `npm run build` and publishes `dist` (see `netlify.toml`).
 - Some advanced topics (NetworkPolicy, HPA metrics, ephemeral containers) depend on your cluster setup.
 - **Lab only:** never run the example solutions against shared or production clusters.
 - Progress is stored in your browser `localStorage` only.
-- **Anonymous stats (opt-in):** `/stats` shows public aggregates (sessions, minutes, tiles, country). No cookies, no IP storage, country from CDN edge only. Off by default — enable on the home page if you want to contribute.
+- **Anonymous stats (opt-out):** `/stats` shows public aggregates (sessions, minutes, tiles, country). No cookies, no IP storage, country from CDN edge only. On by default — turn off on the home page anytime.
 - This project does **not** use the official Kubernetes logo.
 
 ### Local stats API

@@ -1,16 +1,21 @@
-const OPT_IN_KEY = 'kb-anon-stats-opt-in'
+const OPT_OUT_KEY = 'kb-anon-stats-opt-in'
 const SESSION_SENT_KEY = 'kb-anon-session-sent'
 
-export function readStatsOptIn(): boolean {
+/**
+ * Opt-out model: enabled by default.
+ * localStorage "0" = opted out; missing/"1" = enabled.
+ * (Key name kept for backward compatibility with earlier builds.)
+ */
+export function readStatsEnabled(): boolean {
   try {
-    return localStorage.getItem(OPT_IN_KEY) === '1'
+    return localStorage.getItem(OPT_OUT_KEY) !== '0'
   } catch {
-    return false
+    return true
   }
 }
 
-export function writeStatsOptIn(enabled: boolean): void {
-  localStorage.setItem(OPT_IN_KEY, enabled ? '1' : '0')
+export function writeStatsEnabled(enabled: boolean): void {
+  localStorage.setItem(OPT_OUT_KEY, enabled ? '1' : '0')
 }
 
 export function hasSentSessionBeacon(): boolean {

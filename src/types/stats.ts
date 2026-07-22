@@ -14,7 +14,8 @@ export interface StatsSnapshot {
     storesIp: false
     usesCookies: false
     granularity: 'country-only CDN edge + daily aggregates'
-    optInRequired: true
+    optInRequired: false
+    optOutAvailable: true
   }
 }
 

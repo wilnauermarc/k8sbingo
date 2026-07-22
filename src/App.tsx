@@ -7,12 +7,12 @@ import { ChallengeModal } from './components/ChallengeModal'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { Header } from './components/Header'
 import { OnboardingPanel } from './components/OnboardingPanel'
-import { StatsOptInBanner } from './components/StatsOptInBanner'
+import { StatsOptOutBanner } from './components/StatsOptOutBanner'
 import { getLearningPath } from './data/learningPaths'
 import {
   trackTileCompleted,
   useAnonymousTelemetry,
-  useStatsOptIn,
+  useStatsPreference,
 } from './hooks/useAnonymousTelemetry'
 import { useBingoBoard } from './hooks/useBingoBoard'
 import type {
@@ -52,8 +52,9 @@ export default function App() {
   const [pendingBoard, setPendingBoard] = useState<PendingBoardOptions | null>(
     null,
   )
-  const { optedIn, setOptIn } = useStatsOptIn()
-  useAnonymousTelemetry(optedIn)
+  const { enabled: statsEnabled, setEnabled: setStatsEnabled } =
+    useStatsPreference()
+  useAnonymousTelemetry(statsEnabled)
 
   const selectedCell: BoardCell | null =
     selectedIndex === null ? null : cells[selectedIndex]
@@ -110,7 +111,7 @@ export default function App() {
 
       <OnboardingPanel onApplyStarter={applyStarterSetup} />
 
-      <StatsOptInBanner optedIn={optedIn} onChange={setOptIn} />
+      <StatsOptOutBanner enabled={statsEnabled} onChange={setStatsEnabled} />
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)] lg:gap-5">
         <BoardControls
@@ -143,8 +144,9 @@ export default function App() {
         </p>
         <p>
           Progress stays in this browser via localStorage. No cookies. Anonymous
-          aggregate stats are <strong className="font-medium text-ink">opt-in
-          only</strong> and never store IPs.{' '}
+          aggregate stats run by default and never store IPs —{' '}
+          <strong className="font-medium text-ink">opt out anytime</strong> above
+          or on this page.{' '}
           <Link to="/stats" className="text-k8s-bright hover:underline">
             View public stats
           </Link>
@@ -174,7 +176,7 @@ export default function App() {
           if (!selectedCell) return
           const wasComplete = selectedCell.completed
           toggleComplete(selectedCell.challenge.id)
-          if (!wasComplete) trackTileCompleted(optedIn)
+          if (!wasComplete) trackTileCompleted(statsEnabled)
         }}
       />
 

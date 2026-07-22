@@ -60,8 +60,8 @@ export function StatsPage() {
             Anonymous stats
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            Public aggregates only. Built for GDPR-friendly transparency: opt-in
-            on the main page, no cookies, no IP storage, country from CDN edge.
+            Public aggregates only. Built for GDPR-friendly transparency: anonymous
+            by default with opt-out, no cookies, no IP storage, country from CDN edge.
           </p>
         </div>
         <button
@@ -165,8 +165,7 @@ export function StatsPage() {
               <ul className="space-y-2">
                 {stats.countries.length === 0 && (
                   <li className="text-sm text-ink-muted">
-                    No country data yet — aggregates appear after opted-in
-                    visits on Netlify.
+                    No country data yet — aggregates appear after visits on Netlify.
                   </li>
                 )}
                 {stats.countries.map((country) => {

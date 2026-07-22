@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Segoe UI", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Trebuchet MS", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #e8eef9;
+  --color-ink-muted: #93a4c3;
+  --color-surface: #0b1220;
+  --color-surface-raised: #121a2b;
+  --color-surface-overlay: #1a2438;
+  --color-border: #243149;
+  --color-border-strong: #334155;
+  --color-k8s: #326ce5;
+  --color-k8s-bright: #5b8def;
+  --color-k8s-soft: #1e3a6e;
+  --color-success: #34d399;
+  --color-success-soft: #064e3b;
+  --color-warn: #fbbf24;
+  --color-danger: #f87171;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgb(50 108 229 / 0.18), transparent),
+      radial-gradient(ellipse 40% 30% at 100% 0%, rgb(30 58 110 / 0.35), transparent),
+      var(--color-surface);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  button {
+    font: inherit;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-k8s-bright);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  @keyframes bingo-pop {
+    0% {
+      transform: scale(0.85);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.05);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes bingo-shimmer {
+    0% {
+      background-position: 0% 50%;
+    }
+    100% {
+      background-position: 100% 50%;
+    }
+  }
+
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(-10%) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(110vh) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  .animate-bingo-pop {
+    animation: bingo-pop 0.45s ease-out;
+  }
+
+  .animate-bingo-shimmer {
+    background-size: 200% 200%;
+    animation: bingo-shimmer 2s linear infinite;
+  }
+
+  .animate-confetti {
+    animation: confetti-fall 2.4s ease-in forwards;
+  }
+}

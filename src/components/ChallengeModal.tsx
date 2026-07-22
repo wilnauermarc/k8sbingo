@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import {
   Check,
   ChevronDown,
@@ -8,10 +8,13 @@ import {
   Clock3,
   Lightbulb,
   ListChecks,
+  MessageCircleQuestion,
+  Play,
+  Target,
   Terminal,
   X,
 } from 'lucide-react'
-import type { EnrichedChallenge } from '../types/challenge'
+import type { ChallengeChecklist, EnrichedChallenge } from '../types/challenge'
 import { DifficultyBadge } from './DifficultyBadge'
 
 interface ChallengeModalProps {
@@ -20,6 +23,8 @@ interface ChallengeModalProps {
   onClose: () => void
   onToggleComplete: () => void
 }
+
+type ChecklistKey = `${keyof ChallengeChecklist}-${number}` | 'reflect'
 
 export function ChallengeModal({
   challenge,
@@ -30,14 +35,12 @@ export function ChallengeModal({
   const titleId = useId()
   const [showHint, setShowHint] = useState(false)
   const [showSolution, setShowSolution] = useState(false)
-  const [checkedExpect, setCheckedExpect] = useState(false)
-  const [checkedSuccess, setCheckedSuccess] = useState(false)
+  const [checked, setChecked] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     setShowHint(false)
     setShowSolution(false)
-    setCheckedExpect(false)
-    setCheckedSuccess(false)
+    setChecked({})
   }, [challenge?.id])
 
   useEffect(() => {
@@ -56,9 +59,29 @@ export function ChallengeModal({
     }
   }, [challenge, onClose])
 
+  const progress = useMemo(() => {
+    if (!challenge || challenge.isFree) {
+      return { done: 0, total: 0 }
+    }
+    const { checklist } = challenge
+    const keys: ChecklistKey[] = [
+      ...checklist.before.map((_, i) => `before-${i}` as const),
+      ...checklist.during.map((_, i) => `during-${i}` as const),
+      ...checklist.after.map((_, i) => `after-${i}` as const),
+      'reflect',
+    ]
+    const done = keys.filter((key) => checked[key]).length
+    return { done, total: keys.length }
+  }, [challenge, checked])
+
   if (!challenge) return null
 
   const isFree = Boolean(challenge.isFree)
+  const { checklist } = challenge
+
+  const toggle = (key: string) => {
+    setChecked((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
@@ -127,26 +150,66 @@ export function ChallengeModal({
 
           {!isFree && (
             <div className="rounded-xl border border-border bg-surface-overlay/40 px-3.5 py-3">
-              <p className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-ink-muted uppercase">
-                <ListChecks className="size-3.5 text-k8s-bright" />
-                Learning checklist
-              </p>
-              <ul className="space-y-3">
-                <ChecklistItem
-                  checked={checkedExpect}
-                  onChange={setCheckedExpect}
-                  label="Before"
-                  text={challenge.expect}
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-ink-muted uppercase">
+                  <ListChecks className="size-3.5 text-k8s-bright" />
+                  Learning checklist
+                </p>
+                <span className="text-[11px] font-medium text-ink-muted">
+                  {progress.done}/{progress.total} checked
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                <ChecklistGroup
+                  icon={<Target className="size-3.5" />}
+                  title="1. Plan"
+                  subtitle="Decide what done looks like before you touch the cluster."
+                  items={checklist.before}
+                  idPrefix="before"
+                  checked={checked}
+                  onToggle={toggle}
                 />
-                <ChecklistItem
-                  checked={checkedSuccess}
-                  onChange={setCheckedSuccess}
-                  label="After"
-                  text={challenge.successCheck}
+                <ChecklistGroup
+                  icon={<Play className="size-3.5" />}
+                  title="2. While you work"
+                  subtitle="Stay in a tight get → describe → logs loop."
+                  items={checklist.during}
+                  idPrefix="during"
+                  checked={checked}
+                  onToggle={toggle}
                 />
-              </ul>
+                <ChecklistGroup
+                  icon={<Check className="size-3.5" />}
+                  title="3. Verify"
+                  subtitle="Prove it with evidence — not vibes."
+                  items={checklist.after}
+                  idPrefix="after"
+                  checked={checked}
+                  onToggle={toggle}
+                />
+                <div className="rounded-xl border border-border bg-surface/50 px-3 py-3">
+                  <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-amber-300 uppercase">
+                    <MessageCircleQuestion className="size-3.5" />
+                    4. Reflect
+                  </p>
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(checked.reflect)}
+                      onChange={() => toggle('reflect')}
+                      className="mt-1 size-4 rounded border-border bg-surface accent-k8s"
+                    />
+                    <span className="text-sm leading-relaxed text-ink">
+                      {checklist.reflect}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
               <p className="mt-3 text-xs text-ink-muted">
-                Checklist is for your thinking — it is not stored and not verified.
+                Use this as a lab coach. Checks stay on this screen only and are
+                not auto-verified against your cluster.
               </p>
             </div>
           )}
@@ -212,34 +275,51 @@ export function ChallengeModal({
   )
 }
 
-function ChecklistItem({
+function ChecklistGroup({
+  icon,
+  title,
+  subtitle,
+  items,
+  idPrefix,
   checked,
-  onChange,
-  label,
-  text,
+  onToggle,
 }: {
-  checked: boolean
-  onChange: (value: boolean) => void
-  label: string
-  text: string
+  icon: ReactNode
+  title: string
+  subtitle: string
+  items: string[]
+  idPrefix: string
+  checked: Record<string, boolean>
+  onToggle: (key: string) => void
 }) {
   return (
-    <li>
-      <label className="flex cursor-pointer items-start gap-3">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(event) => onChange(event.target.checked)}
-          className="mt-1 size-4 rounded border-border bg-surface accent-k8s"
-        />
-        <span>
-          <span className="block text-xs font-semibold tracking-wide text-k8s-bright uppercase">
-            {label}
-          </span>
-          <span className="text-sm leading-relaxed text-ink">{text}</span>
-        </span>
-      </label>
-    </li>
+    <div>
+      <div className="mb-2">
+        <p className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-k8s-bright uppercase">
+          {icon}
+          {title}
+        </p>
+        <p className="mt-0.5 text-xs text-ink-muted">{subtitle}</p>
+      </div>
+      <ul className="space-y-2">
+        {items.map((item, index) => {
+          const key = `${idPrefix}-${index}`
+          return (
+            <li key={key}>
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg px-1 py-0.5 hover:bg-surface/40">
+                <input
+                  type="checkbox"
+                  checked={Boolean(checked[key])}
+                  onChange={() => onToggle(key)}
+                  className="mt-1 size-4 shrink-0 rounded border-border bg-surface accent-k8s"
+                />
+                <span className="text-sm leading-relaxed text-ink">{item}</span>
+              </label>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 

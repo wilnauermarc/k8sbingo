@@ -12,6 +12,17 @@ export type Category =
   | 'Scaling'
   | 'Security'
 
+export interface ChallengeChecklist {
+  /** Decide what “done” looks like before touching the cluster. */
+  before: string[]
+  /** Practical moves while working. */
+  during: string[]
+  /** Concrete checks that prove success. */
+  after: string[]
+  /** One reflection prompt to lock in the lesson. */
+  reflect: string
+}
+
 export interface Challenge {
   id: string
   title: string
@@ -24,9 +35,11 @@ export interface Challenge {
   why?: string
   /** Rough hands-on time in a local cluster. */
   estimatedMinutes?: number
-  /** What to think about before running commands. */
+  /** Optional checklist overrides (merged on top of category defaults). */
+  checklist?: Partial<ChallengeChecklist>
+  /** @deprecated Prefer checklist.before — still accepted for older overrides. */
   expect?: string
-  /** How to verify success afterwards. */
+  /** @deprecated Prefer checklist.after — still accepted for older overrides. */
   successCheck?: string
   isFree?: boolean
 }
@@ -35,8 +48,7 @@ export interface Challenge {
 export interface EnrichedChallenge extends Challenge {
   why: string
   estimatedMinutes: number
-  expect: string
-  successCheck: string
+  checklist: ChallengeChecklist
 }
 
 export type DifficultyFilter = Difficulty | 'all'

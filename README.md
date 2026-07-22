@@ -12,7 +12,7 @@ Complete real cluster challenges in your own local environment (kind, k3d, Minik
 - Learning path modes (workloads, networking, troubleshooting, …)
 - 150+ seeded Kubernetes challenges across common topics
 - 24 random tasks per board + free center square
-- “Why it matters” context plus before/after learning checklist
+- “Why it matters” context plus a Plan → Do → Verify → Reflect checklist
 - Estimated duration per challenge
 - Challenge detail modal with optional hint and example `kubectl` / YAML
 - Weekly goal (3 challenges) and day streak tracking

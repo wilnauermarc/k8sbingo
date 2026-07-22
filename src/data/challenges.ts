@@ -12,8 +12,12 @@ export const FREE_SPACE: Challenge = {
   exampleSolution: '# Free space — no kubectl required.',
   why: 'A free space keeps bingo fair and reminds you that learning starts with showing up.',
   estimatedMinutes: 0,
-  expect: 'No preparation needed — this square is already complete.',
-  successCheck: 'Nothing to verify. Pick a neighboring challenge and get hands-on.',
+  checklist: {
+    before: ['No preparation needed — this square is already complete.'],
+    during: ['Pick a neighboring challenge and open it.'],
+    after: ['Nothing to verify here.'],
+    reflect: 'Which challenge looks like the best first win for you?',
+  },
   isFree: true,
 }
 
